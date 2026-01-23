@@ -16,11 +16,20 @@
 
 package com.example.reply.ui.theme
 
+import android.app.Activity
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
 private val LightColors = lightColorScheme(
     primary = md_theme_light_primary,
@@ -92,13 +101,33 @@ fun AppTheme(
     useDarkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colors = if (!useDarkTheme) {
-        LightColors
-    } else {
-        DarkColors
+    // 동적 색상은 알고리즘이 사용자의 배경화면에서 맞춤 색상을 가져와 앱과 시스템 ui에 적용
+    // Android 12 이상에서 사용할 수 있고, dynamicDarkColorScheme()이나 dynamicLightColorScheme()을 사용해 동적 색 구성표 설정 가능
+    val context = LocalContext.current
+    val colors =
+        when {
+            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) -> {
+                if (useDarkTheme) dynamicDarkColorScheme(context)
+                else dynamicLightColorScheme(context)
+            }
+            useDarkTheme -> DarkColors
+            else -> LightColors
+        }
+    // 테마 기본 색상에 따라 상태 표시줄 색상 업데이트
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = colors.primary.toArgb()
+            WindowCompat
+                .getInsetsController(window, view)
+                .isAppearanceLightStatusBars = useDarkTheme
+        }
     }
     MaterialTheme(
         colorScheme = colors,
+        typography = typography, // 테마에 서체 적용
+        shapes = shapes,    // 테마에 도형 적용
         content = content
     )
 }
