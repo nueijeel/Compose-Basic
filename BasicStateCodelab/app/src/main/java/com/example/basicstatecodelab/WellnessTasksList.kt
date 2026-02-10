@@ -8,19 +8,31 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
-// fake data create method (실제 앱에서는 데이터 영역에 위치)
-fun getWellnessTasks() = List(30) { i -> WellnessTask(i, "Task # $i") }
-
+// 목록 기본값이었던 getWellnessTasks() 결과값이 Screen 수준(WellnessScreen)으로 끌어올려지기 때문에
+// 새 람다 함수 매개변수인 onCloseTask 추가(삭제될 WellnessTask 수신)
 @Composable
 fun WellnessTasksList(
+    list: List<WellnessTask>,
+    onCheckedTask: (WellnessTask, Boolean) -> Unit,
+    onCloseTask: (WellnessTask) -> Unit,
     modifier: Modifier = Modifier,
-    list: List<WellnessTask> = remember { getWellnessTasks() }
 ) {
     LazyColumn(
         modifier = modifier,
     ) {
-        items(list) { task ->
-            WellnessTaskItem(taskName = task.label)
+        // 기본적으로 각 항목의 상태는 list에 있는 항목의 위치를 기준으로 키가 지정됨.
+        // mutableList에서는 데이터 세트가 변경될 때 위치가 변경되는 항목은 기억된 상태를 잃는 문제가 발생
+        // 각 WellnessTaskItem의 id를 각 항목의 키로 사용해 문제 해결
+        items(
+            items = list,
+            key = { task -> task.id }
+        ) { task ->
+            WellnessTaskItem(
+                taskName = task.label,
+                checked = task.checked,
+                onCheckedChange = { checked -> onCheckedTask(task, checked) },
+                onClose = { onCloseTask(task) }
+            )
         }
     }
 }
